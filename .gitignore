@@ -1,0 +1,4 @@
+.env
+knowtech-go.exe
+feeds.db-shm
+feeds.db-wal
