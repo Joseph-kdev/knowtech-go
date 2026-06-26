@@ -1,6 +1,6 @@
 -- +goose Up
 CREATE TABLE feeds (
-    id TEXT PRIMARY KEY,
+    id UUID PRIMARY KEY,
     name TEXT NOT NULL,
     url TEXT NOT NULL,
     category TEXT,

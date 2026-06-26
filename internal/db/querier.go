@@ -6,12 +6,18 @@ package db
 
 import (
 	"context"
+
+	"github.com/google/uuid"
 )
 
 type Querier interface {
+	AddPostsToDatabase(ctx context.Context, arg AddPostsToDatabaseParams) ([]Post, error)
 	CreateFeed(ctx context.Context, arg CreateFeedParams) (Feed, error)
 	FeedExists(ctx context.Context, url string) (bool, error)
 	GetAllFeeds(ctx context.Context) ([]Feed, error)
+	GetFeedstoFetch(ctx context.Context, limit int32) ([]Feed, error)
+	GetPostsByFeed(ctx context.Context) ([]GetPostsByFeedRow, error)
+	MarkFeedAsFetched(ctx context.Context, id uuid.UUID) (Feed, error)
 }
 
 var _ Querier = (*Queries)(nil)

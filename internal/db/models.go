@@ -7,13 +7,27 @@ package db
 import (
 	"database/sql"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type Feed struct {
-	ID        string         `json:"id"`
-	Name      string         `json:"name"`
-	Url       string         `json:"url"`
-	Category  sql.NullString `json:"category"`
-	CreatedAt time.Time      `json:"created_at"`
-	UpdatedAt time.Time      `json:"updated_at"`
+	ID            uuid.UUID      `json:"id"`
+	Name          string         `json:"name"`
+	Url           string         `json:"url"`
+	Category      sql.NullString `json:"category"`
+	CreatedAt     time.Time      `json:"created_at"`
+	UpdatedAt     time.Time      `json:"updated_at"`
+	LastFetchedAt sql.NullTime   `json:"last_fetched_at"`
+}
+
+type Post struct {
+	ID          uuid.UUID      `json:"id"`
+	FeedID      uuid.UUID      `json:"feed_id"`
+	Title       string         `json:"title"`
+	Url         string         `json:"url"`
+	Description sql.NullString `json:"description"`
+	PublishedAt time.Time      `json:"published_at"`
+	CreatedAt   time.Time      `json:"created_at"`
+	UpdatedAt   time.Time      `json:"updated_at"`
 }

@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/Joseph-kdev/knowtech-go/handlers"
 	"github.com/Joseph-kdev/knowtech-go/internal/db"
@@ -12,7 +13,7 @@ import (
 	"github.com/go-chi/cors"
 	"github.com/joho/godotenv"
 
-	_"github.com/mattn/go-sqlite3"
+	_ "github.com/lib/pq"
 )
 
 func main() {
@@ -22,13 +23,21 @@ func main() {
 		log.Fatal("PORT is not found in the environment")
 	}
 
-	conn, err := sql.Open("sqlite3", "./feeds.db?_journal=WAL&_busy_timeout=5000")
+	db_URL := os.Getenv("DB_CONNECTION")
+	if db_URL == "" {
+		log.Fatal("Database connection url not found in environment")
+	}
+
+
+	conn, err := sql.Open("postgres", db_URL)
 	if err != nil {
 		log.Fatal(err)
 	}
 	sqlDB := db.New(conn)
 	
 	apiCfg := handlers.Apiconfig{DB: sqlDB}
+
+	go handlers.StartScraper(sqlDB, 5, 4*time.Hour)
 
 	router := chi.NewRouter()
 	router.Use(cors.Handler(cors.Options{
@@ -45,6 +54,8 @@ func main() {
 	apiRouter.Post("/feed", apiCfg.AddFeed)
 	apiRouter.Get("/feed", apiCfg.GetAllFeeds)
 
+	apiRouter.Get("/posts", apiCfg.GetGroupedPosts)
+
 	router.Mount("/api", apiRouter)
 	
 	srv := &http.Server{
@@ -58,3 +69,4 @@ func main() {
 		log.Fatal(err)
 	}
 }
+ 

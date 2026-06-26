@@ -48,7 +48,7 @@ func (apiCfg *Apiconfig) AddFeed(w http.ResponseWriter, r *http.Request) {
 	}
 
 	feed, err := apiCfg.DB.CreateFeed(r.Context(), db.CreateFeedParams{
-		ID: uuid.New().String(),
+		ID: uuid.New(),
 		Name: params.Name,
 		Url: params.Url,
 		Category: sql.NullString{
