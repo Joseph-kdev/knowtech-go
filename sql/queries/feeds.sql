@@ -24,3 +24,15 @@ RETURNING *;
 SELECT * FROM feeds
 ORDER BY last_fetched_at ASC NULLS FIRST
 LIMIT $1;
+
+-- name: IncrementFeedFollowerCount :one
+UPDATE feeds
+SET feed_followers_count = feed_followers_count + 1
+WHERE id = $1
+RETURNING *;
+
+-- name: DecrementFeedFollowerCount :one
+UPDATE feeds
+SET feed_followers_count = feed_followers_count - 1
+WHERE id = $1 AND feed_followers_count > 0
+RETURNING *;

@@ -9,6 +9,7 @@ import (
 
 	"github.com/Joseph-kdev/knowtech-go/handlers"
 	"github.com/Joseph-kdev/knowtech-go/internal/db"
+	authmw "github.com/Joseph-kdev/knowtech-go/middleware"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/cors"
 	"github.com/joho/godotenv"
@@ -28,13 +29,12 @@ func main() {
 		log.Fatal("Database connection url not found in environment")
 	}
 
-
 	conn, err := sql.Open("postgres", db_URL)
 	if err != nil {
 		log.Fatal(err)
 	}
 	sqlDB := db.New(conn)
-	
+
 	apiCfg := handlers.Apiconfig{DB: sqlDB}
 
 	go handlers.StartScraper(sqlDB, 5, 4*time.Hour)
@@ -51,16 +51,22 @@ func main() {
 	apiRouter := chi.NewRouter()
 	apiRouter.Get("/health", handlers.HandlerReadiness)
 
-	apiRouter.Post("/feed", apiCfg.AddFeed)
-	apiRouter.Get("/feed", apiCfg.GetAllFeeds)
-
-	apiRouter.Get("/posts", apiCfg.GetGroupedPosts)
+	apiRouter.Group(func(r chi.Router) {
+		r.Use(authmw.MiddlewareAuth)
+		r.Post("/feeds", apiCfg.AddFeed)
+		r.Get("/feeds", apiCfg.GetAllFeeds)
+		r.Get("/posts", apiCfg.GetGroupedPosts)
+		r.Post("/users", apiCfg.AddUser)
+		r.Post("/follow_feeds", apiCfg.FollowFeedAsUser)
+		r.Get("/followed_feeds", apiCfg.GetUserFollowedFeeds)
+		r.Post("/unfollow_feeds", apiCfg.UnfollowFeedAsUser)
+	})
 
 	router.Mount("/api", apiRouter)
-	
+
 	srv := &http.Server{
 		Handler: router,
-		Addr: ":" + portString,
+		Addr:    ":" + portString,
 	}
 
 	log.Printf("Server starting on port %v", portString)
@@ -69,4 +75,3 @@ func main() {
 		log.Fatal(err)
 	}
 }
- 

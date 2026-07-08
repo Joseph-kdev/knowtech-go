@@ -48,9 +48,9 @@ func (apiCfg *Apiconfig) AddFeed(w http.ResponseWriter, r *http.Request) {
 	}
 
 	feed, err := apiCfg.DB.CreateFeed(r.Context(), db.CreateFeedParams{
-		ID: uuid.New(),
+		ID:   uuid.New(),
 		Name: params.Name,
-		Url: params.Url,
+		Url:  params.Url,
 		Category: sql.NullString{
 			String: params.Category,
 			Valid:  true,
@@ -64,7 +64,7 @@ func (apiCfg *Apiconfig) AddFeed(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response.RespondWithJSON(w, 201, feed)
+	response.RespondWithJSON(w, 201, response.FormatFeed(feed))
 }
 
 func (apiCfg *Apiconfig) GetAllFeeds(w http.ResponseWriter, r *http.Request) {
@@ -73,5 +73,5 @@ func (apiCfg *Apiconfig) GetAllFeeds(w http.ResponseWriter, r *http.Request) {
 		response.RespondWithError(w, 500, fmt.Sprintf("error fetching feeds: %v", err))
 		return
 	}
-	response.RespondWithJSON(w, 200, feeds)
+	response.RespondWithJSON(w, 200, response.FormatFeeds(feeds))
 }
