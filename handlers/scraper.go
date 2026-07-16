@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"log"
 	"strings"
 	"sync"
@@ -16,6 +17,10 @@ func StartScraper(queries *db.Queries, concurrency int, interval time.Duration) 
 	log.Printf("Scraping on %v goroutines every %s duration", concurrency, interval)
 	ticker := time.NewTicker(interval)
 	for ; ; <-ticker.C {
+		if err := queries.DeleteStalePosts(context.Background()); err != nil {
+			log.Printf("Error deleting stale posts: %v", err)
+		}
+
 		feeds, err := queries.GetFeedstoFetch(context.Background(), int32(concurrency))
 		if err != nil {
 			log.Printf("Error fetching feeds: %v", err)
@@ -53,20 +58,20 @@ func scrapeFeed(queries *db.Queries, feed db.Feed, wg *sync.WaitGroup) {
 				Valid:  true,
 			}
 		}
-		pubAt, err := time.Parse(time.RFC1123Z, item.PubDate)
+		pubAt, err := parsePubDate(item.PubDate)
 		if err != nil {
 			log.Printf("Error parsing publication date for %s: %v", item.Link, err)
 			continue
 		}
 		_, err = queries.AddPostsToDatabase(context.Background(), db.AddPostsToDatabaseParams{
-			ID: uuid.New(),
-			FeedID: feed.ID,
-			Title: item.Title,
-			Url: item.Link,
+			ID:          uuid.New(),
+			FeedID:      feed.ID,
+			Title:       item.Title,
+			Url:         item.Link,
 			Description: description,
 			PublishedAt: pubAt,
-			CreatedAt: time.Now().UTC(),
-			UpdatedAt: time.Now().UTC(),
+			CreatedAt:   time.Now().UTC(),
+			UpdatedAt:   time.Now().UTC(),
 		})
 		if err != nil {
 			if strings.Contains(err.Error(), "duplicate key") {
@@ -79,3 +84,36 @@ func scrapeFeed(queries *db.Queries, feed db.Feed, wg *sync.WaitGroup) {
 	}
 }
 
+func parsePubDate(pubDate string) (time.Time, error) {
+    // Try RFC1123Z first (with numeric timezone)
+    t, err := time.Parse(time.RFC1123Z, pubDate)
+    if err == nil {
+        return t, nil
+    }
+    
+    // Try RFC1123 (with timezone abbreviation)
+    t, err = time.Parse(time.RFC1123, pubDate)
+    if err == nil {
+        return t, nil
+    }
+    
+    // Try other common RSS formats
+    formats := []string{
+        "Mon, 02 Jan 2006 15:04:05 MST",    // RFC1123
+        "Mon, 02 Jan 2006 15:04:05 -0700",  // RFC1123Z
+        "Mon, 02 Jan 2006 15:04:05 Z",      // UTC with Z
+        "2006-01-02T15:04:05Z",             // RFC3339
+        "2006-01-02T15:04:05-07:00",        // RFC3339 with offset
+        "2006-01-02 15:04:05 -0700",        // Common format
+        "2006-01-02T15:04:05",              // Without timezone
+    }
+    
+    for _, format := range formats {
+        t, err := time.Parse(format, pubDate)
+        if err == nil {
+            return t, nil
+        }
+    }
+    
+    return time.Time{}, fmt.Errorf("unable to parse date: %s", pubDate)
+}

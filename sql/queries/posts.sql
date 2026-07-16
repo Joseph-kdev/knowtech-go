@@ -9,23 +9,35 @@ SELECT
     f.id AS feed_id,
     f.name AS feed_name,
     f.url AS feed_url,
-    json_agg(
-        json_build_object(
-            'id', p.id,
-            'title', p.title,
-            'url', p.url,
-            'description', p.description,
-            'published_at', p.published_at,
-            'created_at', p.created_at,
-            'updated_at', p.updated_at
-        ) ORDER BY p.published_at DESC
-    ) AS posts
+    p.id AS post_id,
+    p.title AS post_title,
+    p.url AS post_url,
+    p.description AS post_description,
+    p.published_at AS post_published_at,
+    p.created_at AS post_created_at,
+    p.updated_at AS post_updated_at
 FROM feeds f
 JOIN posts p ON p.feed_id = f.id
-GROUP BY f.id, f.name, f.url
-ORDER BY f.name;
+ORDER BY f.name, p.published_at DESC;
 
--- -- name: DeleteStalePosts :exec
--- DELETE FROM posts
--- WHERE published_at < NOW() - INTERVAL "12 hours";
+-- name: DeleteStalePosts :exec
+DELETE FROM posts
+WHERE published_at < NOW() - INTERVAL '7 days';
 
+-- name: GetPostsFromFollowedFeeds :many
+SELECT 
+    f.id AS feed_id,
+    f.name AS feed_name,
+    f.url AS feed_url,
+    p.id AS post_id,
+    p.title AS post_title,
+    p.url AS post_url,
+    p.description AS post_description,
+    p.published_at AS post_published_at,
+    p.created_at AS post_created_at,
+    p.updated_at AS post_updated_at
+FROM feeds f
+JOIN posts p ON p.feed_id = f.id
+JOIN feed_follows fo ON fo.feed_id = f.id
+WHERE fo.user_id = $1
+ORDER BY f.name, p.published_at DESC;

@@ -50,17 +50,21 @@ func main() {
 
 	apiRouter := chi.NewRouter()
 	apiRouter.Get("/health", handlers.HandlerReadiness)
-
+	
 	apiRouter.Group(func(r chi.Router) {
 		r.Use(authmw.MiddlewareAuth)
 		r.Post("/feeds", apiCfg.AddFeed)
 		r.Get("/feeds", apiCfg.GetAllFeeds)
-		r.Get("/posts", apiCfg.GetGroupedPosts)
+		r.Get("/posts", apiCfg.GetPostsFromFollowed)
 		r.Post("/users", apiCfg.AddUser)
 		r.Post("/follow_feeds", apiCfg.FollowFeedAsUser)
 		r.Get("/followed_feeds", apiCfg.GetUserFollowedFeeds)
 		r.Post("/unfollow_feeds", apiCfg.UnfollowFeedAsUser)
+		r.Post("/bookmarks", apiCfg.AddBookmark)
+		r.Get("/bookmarks", apiCfg.GetBookmarks)
+		r.Post("/remove-bookmarks", apiCfg.DeleteBookmarkForUser)
 	})
+	apiRouter.Post("/seed", apiCfg.SeedFeeds)
 
 	router.Mount("/api", apiRouter)
 

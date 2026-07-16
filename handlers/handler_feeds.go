@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/Joseph-kdev/knowtech-go/internal/db"
@@ -74,4 +75,50 @@ func (apiCfg *Apiconfig) GetAllFeeds(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	response.RespondWithJSON(w, 200, response.FormatFeeds(feeds))
+}
+
+// method to seed feeds to db
+func (apiCfg *Apiconfig) SeedFeeds(w http.ResponseWriter, r *http.Request) {
+	feeds, err := LoadFeeds("feeds.json")
+	if err != nil {
+		response.RespondWithError(w, 500, fmt.Sprintf("error loading feeds: %v", err))
+		return
+	}
+	for _, feed := range feeds {
+		_, err := apiCfg.DB.CreateFeed(r.Context(), db.CreateFeedParams{
+			ID:   uuid.New(),
+			Name: feed.Name,
+			Url:  feed.Url,
+			Category: sql.NullString{
+				String: feed.Category,
+				Valid:  true,
+			},
+			CreatedAt: time.Now().UTC(),
+			UpdatedAt: time.Now().UTC(),
+		})
+		if err != nil {
+			response.RespondWithError(w, 500, fmt.Sprintf("error creating feed: %v", err))
+			return
+		}
+	}
+	response.RespondWithJSON(w, 200, map[string]string{"message": "feeds seeded successfully"})
+}
+
+type Feed struct {
+	Name     string `json:"name"`
+	Url	  string `json:"url"`
+	Category string `json:"category"`
+}
+
+func LoadFeeds(filename string)([]Feed, error) {
+	data, err := os.ReadFile(filename)
+	if err != nil {
+		return nil, fmt.Errorf("error reading file: %v", err)
+	}
+	var feeds []Feed
+	err = json.Unmarshal(data, &feeds)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing JSON: %v", err)
+	}
+	return feeds, nil
 }

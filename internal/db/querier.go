@@ -12,15 +12,20 @@ import (
 
 type Querier interface {
 	AddPostsToDatabase(ctx context.Context, arg AddPostsToDatabaseParams) ([]Post, error)
+	AddToBookmarks(ctx context.Context, arg AddToBookmarksParams) (Bookmark, error)
 	AddUserToDatabase(ctx context.Context, arg AddUserToDatabaseParams) (User, error)
 	CreateFeed(ctx context.Context, arg CreateFeedParams) (Feed, error)
 	DecrementFeedFollowerCount(ctx context.Context, id uuid.UUID) (Feed, error)
+	DeleteBookmark(ctx context.Context, arg DeleteBookmarkParams) (Bookmark, error)
+	DeleteStalePosts(ctx context.Context) error
 	FeedExists(ctx context.Context, url string) (bool, error)
 	FollowFeed(ctx context.Context, arg FollowFeedParams) (FeedFollow, error)
 	GetAllFeeds(ctx context.Context) ([]Feed, error)
+	GetBookmarksByUser(ctx context.Context, userID string) ([]GetBookmarksByUserRow, error)
 	GetFeedstoFetch(ctx context.Context, limit int32) ([]Feed, error)
 	GetFollowedFeedsByUser(ctx context.Context, userID string) ([]GetFollowedFeedsByUserRow, error)
 	GetPostsByFeed(ctx context.Context) ([]GetPostsByFeedRow, error)
+	GetPostsFromFollowedFeeds(ctx context.Context, userID string) ([]GetPostsFromFollowedFeedsRow, error)
 	IncrementFeedFollowerCount(ctx context.Context, id uuid.UUID) (Feed, error)
 	MarkFeedAsFetched(ctx context.Context, id uuid.UUID) (Feed, error)
 	UnfollowFeed(ctx context.Context, arg UnfollowFeedParams) (FeedFollow, error)

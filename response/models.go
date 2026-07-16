@@ -102,3 +102,67 @@ func formatNullableString(value sql.NullString) *string {
 	formatted := value.String
 	return &formatted
 }
+
+type Bookmark struct {
+	ID          string    `json:"id"`
+	UserID      string    `json:"user_id"`
+	FeedID      string    `json:"feed_id"`
+	FeedName    string    `json:"feed_name"`
+	Title       string    `json:"title"`
+	Url         string    `json:"url"`
+	Description string    `json:"description"`
+	PublishedAt time.Time `json:"published_at"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
+
+func FormatBookmark(bookmark db.Bookmark, feedName string) Bookmark {
+	desc := ""
+	if bookmark.Description.Valid {
+		desc = bookmark.Description.String
+	}
+	return Bookmark{
+		ID:          bookmark.ID.String(),
+		UserID:      bookmark.UserID,
+		FeedID:      bookmark.FeedID.String(),
+		FeedName:    feedName,
+		Title:       bookmark.Title,
+		Url:         bookmark.Url,
+		Description: desc,
+		PublishedAt: bookmark.PublishedAt,
+		CreatedAt:   bookmark.CreatedAt,
+		UpdatedAt:   bookmark.UpdatedAt,
+	}
+}
+
+func FormatBookmarks(bookmarks []db.GetBookmarksByUserRow, userID string) []Bookmark {
+	formatted := make([]Bookmark, 0, len(bookmarks))
+	for _, b := range bookmarks {
+		desc := ""
+		if b.Description.Valid {
+			desc = b.Description.String
+		}
+		feedID := ""
+		if b.FeedID.Valid {
+			feedID = b.FeedID.UUID.String()
+		}
+		feedName := ""
+		if b.FeedName.Valid {
+			feedName = b.FeedName.String
+		}
+		formatted = append(formatted, Bookmark{
+			ID:          b.ID.String(),
+			UserID:      userID,
+			FeedID:      feedID,
+			FeedName:    feedName,
+			Title:       b.Title,
+			Url:         b.Url,
+			Description: desc,
+			PublishedAt: b.PublishedAt,
+			CreatedAt:   b.CreatedAt,
+			UpdatedAt:   b.UpdatedAt,
+		})
+	}
+	return formatted
+}
+

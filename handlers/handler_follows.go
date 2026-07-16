@@ -46,19 +46,13 @@ func (apiCfg *Apiconfig) FollowFeedAsUser(w http.ResponseWriter, r *http.Request
 }
 
 func (apiCfg *Apiconfig) GetUserFollowedFeeds(w http.ResponseWriter, r *http.Request) {
-	type parameters struct {
-		UserID string `json:"user_id"`
-	}
-
-	decoder := json.NewDecoder(r.Body)
-	params := parameters{}
-	err := decoder.Decode(&params)
-	if err != nil {
-		response.RespondWithError(w, 400, fmt.Sprintf("error parsing JSON: %v", err))
+	param := r.URL.Query().Get("user_id")
+	if param == "" {
+		response.RespondWithError(w, 400, "user_id query parameter is required")
 		return
 	}
 
-	feeds, err := apiCfg.DB.GetFollowedFeedsByUser(r.Context(), params.UserID)
+	feeds, err := apiCfg.DB.GetFollowedFeedsByUser(r.Context(), param)
 	if err != nil {
 		response.RespondWithError(w, 500, fmt.Sprintf("Error fetching followed feeds: %v", err))
 		return

@@ -11,6 +11,18 @@ import (
 	"github.com/google/uuid"
 )
 
+type Bookmark struct {
+	ID          uuid.UUID      `json:"id"`
+	UserID      string         `json:"user_id"`
+	FeedID      uuid.UUID      `json:"feed_id"`
+	Title       string         `json:"title"`
+	Url         string         `json:"url"`
+	Description sql.NullString `json:"description"`
+	PublishedAt time.Time      `json:"published_at"`
+	CreatedAt   time.Time      `json:"created_at"`
+	UpdatedAt   time.Time      `json:"updated_at"`
+}
+
 type Feed struct {
 	ID                 uuid.UUID      `json:"id"`
 	Name               string         `json:"name"`
