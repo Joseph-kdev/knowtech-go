@@ -13,10 +13,6 @@ import (
 	"github.com/google/uuid"
 )
 
-type Apiconfig struct {
-	DB *db.Queries
-}
-
 func (apiCfg *Apiconfig) AddFeed(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
 		Name     string `json:"name"`

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"log"
 	"net/http"
@@ -13,11 +14,14 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/cors"
 	"github.com/joho/godotenv"
+	"google.golang.org/genai"
 
 	_ "github.com/lib/pq"
 )
 
 func main() {
+	ctx := context.Background()
+
 	godotenv.Load(".env")
 	portString := os.Getenv("PORT")
 	if portString == "" {
@@ -35,7 +39,20 @@ func main() {
 	}
 	sqlDB := db.New(conn)
 
-	apiCfg := handlers.Apiconfig{DB: sqlDB}
+	geminiKey := os.Getenv("GEMINI_KEY")
+	if geminiKey == "" {
+		log.Fatal("Gemini Api Key not found in environment")
+	}
+
+	client, err := genai.NewClient(ctx, &genai.ClientConfig{
+		APIKey:  geminiKey,
+		Backend: genai.BackendGeminiAPI,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	apiCfg := handlers.Apiconfig{DB: sqlDB, Gemini: client}
 
 	go handlers.StartScraper(sqlDB, 5, 4*time.Hour)
 
@@ -50,7 +67,7 @@ func main() {
 
 	apiRouter := chi.NewRouter()
 	apiRouter.Get("/health", handlers.HandlerReadiness)
-	
+
 	apiRouter.Group(func(r chi.Router) {
 		r.Use(authmw.MiddlewareAuth)
 		r.Post("/feeds", apiCfg.AddFeed)
@@ -63,6 +80,7 @@ func main() {
 		r.Post("/bookmarks", apiCfg.AddBookmark)
 		r.Get("/bookmarks", apiCfg.GetBookmarks)
 		r.Post("/remove-bookmarks", apiCfg.DeleteBookmarkForUser)
+		r.Post("/chats", apiCfg.HandleChats)
 	})
 	apiRouter.Post("/seed", apiCfg.SeedFeeds)
 
